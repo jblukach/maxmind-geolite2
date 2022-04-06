@@ -9,7 +9,7 @@ import zipfile
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def lambdaHandler(event, context):
+def handler(event, context):
 
     ssm = boto3.client('ssm')
     secret = ssm.get_parameter(
