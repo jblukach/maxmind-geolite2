@@ -121,6 +121,7 @@ class MaxmindGeolite2Stack(Stack):
 
         search = _lambda.Function(
             self, 'search',
+            function_name = 'geo',
             runtime = _lambda.Runtime.PYTHON_3_9,
             code = _lambda.Code.from_asset('search'),
             handler = 'search.handler',
