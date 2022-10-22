@@ -1,6 +1,3 @@
-import boto3
-import sys
-
 from aws_cdk import (
     Duration,
     RemovalPolicy,
@@ -13,7 +10,6 @@ from aws_cdk import (
     aws_logs_destinations as _destinations,
     aws_s3 as _s3,
     aws_s3_deployment as _deployment,
-    aws_sns as _sns,
     aws_sns_subscriptions as _subs,
     aws_ssm as _ssm
 )
@@ -25,23 +21,27 @@ class MaxmindGeolite2Stack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        try:
-            client = boto3.client('account')
-            operations = client.get_alternate_contact(
-                AlternateContactType='OPERATIONS'
-            )
-        except:
-            print('Missing IAM Permission --> account:GetAlternateContact')
-            sys.exit(1)
-            pass
+        account = Stack.of(self).account
+        region = Stack.of(self).region
 
-        operationstopic = _sns.Topic(
-            self, 'operationstopic'
+    ### LAMBDA LAYER ###
+
+        if region == 'ap-northeast-1' or region == 'ap-south-1' or region == 'ap-southeast-1' or \
+            region == 'ap-southeast-2' or region == 'eu-central-1' or region == 'eu-west-1' or \
+            region == 'eu-west-2' or region == 'me-central-1' or region == 'us-east-1' or \
+            region == 'us-east-2' or region == 'us-west-2': number = str(1)
+
+        if region == 'af-south-1' or region == 'ap-east-1' or region == 'ap-northeast-2' or \
+            region == 'ap-northeast-3' or region == 'ap-southeast-3' or region == 'ca-central-1' or \
+            region == 'eu-north-1' or region == 'eu-south-1' or region == 'eu-west-3' or \
+            region == 'me-south-1' or region == 'sa-east-1' or region == 'us-west-1': number = str(2)
+
+        layer = _lambda.LayerVersion.from_layer_version_arn(
+            self, 'layer',
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:'+number
         )
 
-        operationstopic.add_subscription(
-            _subs.EmailSubscription(operations['AlternateContact']['EmailAddress'])
-        )
+    ### STORAGE ###
 
         maxmind_api_key_secure_ssm_parameter = '/maxmind/geolite2/api'
 
@@ -59,6 +59,20 @@ class MaxmindGeolite2Stack(Stack):
             prune = False
         )
 
+    ### ERROR ###
+
+        error = _lambda.Function.from_function_arn(
+            self, 'error',
+            'arn:aws:lambda:'+region+':'+account+':function:shipit-error'
+        )
+
+        timeout = _lambda.Function.from_function_arn(
+            self, 'timeout',
+            'arn:aws:lambda:'+region+':'+account+':function:shipit-timeout'
+        )
+
+    ### SEARCH ###
+
         role = _iam.Role(
             self, 'role',
             assumed_by = _iam.ServicePrincipal(
@@ -72,62 +86,18 @@ class MaxmindGeolite2Stack(Stack):
             )
         )
 
-### ERROR ###
-
-        errorrole = _iam.Role(
-            self, 'errorrole',
-            assumed_by = _iam.ServicePrincipal(
-                'lambda.amazonaws.com'
-            )
-        )
-
-        errorrole.add_managed_policy(
-            _iam.ManagedPolicy.from_aws_managed_policy_name(
-                'service-role/AWSLambdaBasicExecutionRole'
-            )
-        )
-
-        errorrole.add_to_policy(
-            _iam.PolicyStatement(
-                actions = [
-                    'sns:Publish'
-                ],
-                resources = [
-                    operationstopic.topic_arn
-                ]
-            )
-        )
-
-        error = _lambda.Function(
-            self, 'error',
-            runtime = _lambda.Runtime.PYTHON_3_9,
-            code = _lambda.Code.from_asset('error'),
-            handler = 'error.handler',
-            role = errorrole,
-            environment = dict(
-                SNS_TOPIC = operationstopic.topic_arn
-            ),
-            architecture = _lambda.Architecture.ARM_64,
-            timeout = Duration.seconds(7),
-            memory_size = 128
-        )
-
-        errormonitor = _logs.LogGroup(
-            self, 'errormonitor',
-            log_group_name = '/aws/lambda/'+error.function_name,
-            retention = _logs.RetentionDays.ONE_DAY,
-            removal_policy = RemovalPolicy.DESTROY
-        )
-
         search = _lambda.Function(
             self, 'search',
             function_name = 'geo',
             runtime = _lambda.Runtime.PYTHON_3_9,
             code = _lambda.Code.from_asset('search'),
             handler = 'search.handler',
-            timeout = Duration.seconds(30),
+            timeout = Duration.seconds(60),
             role = role,
-            memory_size = 512
+            memory_size = 512,
+            layers = [
+                layer
+            ]
         )
 
         searchlogs = _logs.LogGroup(
@@ -147,9 +117,11 @@ class MaxmindGeolite2Stack(Stack):
         searchtime= _logs.SubscriptionFilter(
             self, 'searchtime',
             log_group = searchlogs,
-            destination = _destinations.LambdaDestination(error),
+            destination = _destinations.LambdaDestination(timeout),
             filter_pattern = _logs.FilterPattern.all_terms('Task','timed','out')
         )
+
+    ### BUILD ###
 
         build = _iam.Role(
             self, 'build',
@@ -208,7 +180,7 @@ class MaxmindGeolite2Stack(Stack):
         downloadtime= _logs.SubscriptionFilter(
             self, 'downloadtime',
             log_group = downloadlogs,
-            destination = _destinations.LambdaDestination(error),
+            destination = _destinations.LambdaDestination(timeout),
             filter_pattern = _logs.FilterPattern.all_terms('Task','timed','out')
         )
 

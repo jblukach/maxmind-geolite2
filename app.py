@@ -18,6 +18,7 @@ MaxmindGeolite2Stack(
     )
 )
 
-cdk.Tags.of(app).add('maxmind-geolite2','maxmind-geolite2')
+cdk.Tags.of(app).add('Alias','Tacklebox')
+cdk.Tags.of(app).add('GitHub','https://github.com/jblukach/maxmind-geolite2')
 
 app.synth()
