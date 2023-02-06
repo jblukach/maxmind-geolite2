@@ -35,8 +35,7 @@ class MaxmindGeolite2Stack(Stack):
             self, suppressions = [
                 {'id': 'AwsSolutions-IAM4','reason': 'GitHub Issue'},
                 {'id': 'AwsSolutions-IAM5','reason': 'GitHub Issue'},
-                {'id': 'AwsSolutions-S1','reason': 'GitHub Issue'},
-                {'id': 'AwsSolutions-S10','reason': 'GitHub Issue'}
+                {'id': 'AwsSolutions-S1','reason': 'GitHub Issue'}
             ]
         )
 
@@ -45,19 +44,9 @@ class MaxmindGeolite2Stack(Stack):
 
     ### LAMBDA LAYER ###
 
-        if region == 'ap-northeast-1' or region == 'ap-south-1' or region == 'ap-southeast-1' or \
-            region == 'ap-southeast-2' or region == 'eu-central-1' or region == 'eu-west-1' or \
-            region == 'eu-west-2' or region == 'me-central-1' or region == 'us-east-1' or \
-            region == 'us-east-2' or region == 'us-west-2': number = str(1)
-
-        if region == 'af-south-1' or region == 'ap-east-1' or region == 'ap-northeast-2' or \
-            region == 'ap-northeast-3' or region == 'ap-southeast-3' or region == 'ca-central-1' or \
-            region == 'eu-north-1' or region == 'eu-south-1' or region == 'eu-west-3' or \
-            region == 'me-south-1' or region == 'sa-east-1' or region == 'us-west-1': number = str(2)
-
         layer = _lambda.LayerVersion.from_layer_version_arn(
             self, 'layer',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:'+number
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:3'
         )
 
     ### STORAGE ###
@@ -65,10 +54,12 @@ class MaxmindGeolite2Stack(Stack):
         maxmind_api_key_secure_ssm_parameter = '/maxmind/geolite2/api'
 
         bucket = _s3.Bucket(
-            self, 'bucket', versioned = True,
+            self, 'bucket',
             encryption = _s3.BucketEncryption.S3_MANAGED,
             block_public_access = _s3.BlockPublicAccess.BLOCK_ALL,
-            removal_policy = RemovalPolicy.DESTROY
+            removal_policy = RemovalPolicy.DESTROY,
+            enforce_ssl = True,
+            versioned = True
         )
 
         deployment = _deployment.BucketDeployment(
