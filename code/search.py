@@ -6,8 +6,19 @@ import os
 
 def handler(event, context):
 
+    print(event)
+
     try:
-        ipaddr = event['item']
+        ipaddr = event['ip']            ### SLACK ###
+    except:
+        pass
+
+    try:
+        ipaddr = event['rawPath'][1:]   ### URL ###
+    except:
+        pass
+
+    try:
         iptype = ipaddress.ip_address(ipaddr)
         with geoip2.database.Reader('GeoLite2-City.mmdb') as reader:
             response = reader.city(ipaddr)
@@ -25,6 +36,7 @@ def handler(event, context):
             response2 = reader2.asn(ipaddr)
             asn = response2.autonomous_system_number
             org = response2.autonomous_system_organization
+        code = 200
         msg = {
             'country':country_name,
             'c_iso':country_code,
@@ -40,10 +52,11 @@ def handler(event, context):
             'attribution':desc
         }
     except:
-        msg = {"RequiredFormat": {"item": "134.129.111.111"}}
+        code = 404
+        msg = 'Where the Internet Ends'
         pass
 
     return {
-        'statusCode': 200,
-        'body': json.dumps(msg)
+        'statusCode': code,
+        'body': json.dumps(msg, indent = 4)
     }
