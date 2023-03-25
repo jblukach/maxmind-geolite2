@@ -62,6 +62,24 @@ class MaxmindGeolite2Stack(Stack):
             versioned = True
         )
 
+        bucket.add_lifecycle_rule(
+            expiration = Duration.days(21),
+            noncurrent_version_expiration = Duration.days(1),
+            prefix = 'geoip2.zip'
+        )
+
+        bucket.add_lifecycle_rule(
+            expiration = Duration.days(21),
+            noncurrent_version_expiration = Duration.days(1),
+            prefix = 'GeoLite2-City.mmdb'
+        )
+
+        bucket.add_lifecycle_rule(
+            expiration = Duration.days(21),
+            noncurrent_version_expiration = Duration.days(1),
+            prefix = 'GeoLite2-ASN.mmdb'
+        )
+
         deployment = _deployment.BucketDeployment(
             self, 'DeployFunctionFile',
             sources = [_deployment.Source.asset('code')],
