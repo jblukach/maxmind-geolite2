@@ -1,25 +1,28 @@
-import boto3
 import geoip2.database
 import ipaddress
 import json
-import os
 
 def handler(event, context):
 
     print(event)
 
     try:
-        ipaddr = event['ip']            ### SLACK ###
+        iptype = ipaddress.ip_address(event['ip']) ### SLACK ###
+        if iptype.version == 4 or iptype.version == 6:
+            ipaddr = event['ip']
     except:
+        try:                      
+            iptype = ipaddress.ip_address(event['rawPath'][1:]) ### URL ###
+            if iptype.version == 4 or iptype.version == 6:
+                ipaddr = event['rawPath'][1:]
+        except:
+            iptype = ipaddress.ip_address(event['headers']['x-forwarded-for']) ### USER ###
+            if iptype.version == 4 or iptype.version == 6:
+                ipaddr = event['headers']['x-forwarded-for']
+            pass
         pass
 
     try:
-        ipaddr = event['rawPath'][1:]   ### URL ###
-    except:
-        pass
-
-    try:
-        iptype = ipaddress.ip_address(ipaddr)
         with geoip2.database.Reader('GeoLite2-City.mmdb') as reader:
             response = reader.city(ipaddr)
             country_code = response.country.iso_code

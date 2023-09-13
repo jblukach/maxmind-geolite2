@@ -113,7 +113,7 @@ class MaxmindGeolite2Stack(Stack):
 
         layer = _lambda.LayerVersion.from_layer_version_arn(
             self, 'layer',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:5'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:9'
         )
 
     ### STORAGE ###
@@ -184,12 +184,15 @@ class MaxmindGeolite2Stack(Stack):
         search = _lambda.Function(
             self, 'search',
             function_name = 'geo',
-            runtime = _lambda.Runtime.PYTHON_3_10,
+            runtime = _lambda.Runtime.PYTHON_3_11,
             code = _lambda.Code.from_asset('search'),
             handler = 'search.handler',
-            timeout = Duration.seconds(60),
+            environment = dict(
+                AWS_ACCOUNT = account
+            ),
+            timeout = Duration.seconds(3),
             role = role,
-            memory_size = 512,
+            memory_size = 128,
             layers = [
                 layer
             ]
@@ -210,7 +213,7 @@ class MaxmindGeolite2Stack(Stack):
         searchlogs = _logs.LogGroup(
             self, 'searchlogs',
             log_group_name = '/aws/lambda/'+search.function_name,
-            retention = _logs.RetentionDays.ONE_DAY,
+            retention = _logs.RetentionDays.ONE_MONTH,
             removal_policy = RemovalPolicy.DESTROY
         )
 
@@ -263,6 +266,7 @@ class MaxmindGeolite2Stack(Stack):
             timeout = Duration.seconds(900),
             role = build,
             environment = dict(
+                AWS_ACCOUNT = account,
                 S3_BUCKET = bucket.bucket_name,
                 SSM_PARAMETER = maxmind_api_key_secure_ssm_parameter,
                 LAMBDA_FUNCTION = search.function_name
@@ -273,7 +277,7 @@ class MaxmindGeolite2Stack(Stack):
         downloadlogs = _logs.LogGroup(
             self, 'downloadlogs',
             log_group_name = '/aws/lambda/'+download.function_name,
-            retention = _logs.RetentionDays.ONE_DAY,
+            retention = _logs.RetentionDays.ONE_MONTH,
             removal_policy = RemovalPolicy.DESTROY
         )
 
