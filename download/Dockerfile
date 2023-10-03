@@ -1,5 +1,5 @@
-### 2.95.1 (build ae455d8) ###
-FROM 070176467818.dkr.ecr.us-west-2.amazonaws.com/getpublicip:latest AS layer
+### 2.99.1 (build b2a895e) ###
+FROM public.ecr.aws/forensicir/getpublicip:latest AS layer
 FROM public.ecr.aws/lambda/python:latest
 RUN yum -y update && yum clean all
 ### layer code ###
