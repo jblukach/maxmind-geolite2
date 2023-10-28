@@ -190,7 +190,7 @@ class MaxmindGeolite2Stack(Stack):
             environment = dict(
                 AWS_ACCOUNT = account
             ),
-            timeout = Duration.seconds(3),
+            timeout = Duration.seconds(4),
             role = role,
             memory_size = 128,
             layers = [
@@ -299,7 +299,7 @@ class MaxmindGeolite2Stack(Stack):
             self, 'event',
             schedule=_events.Schedule.cron(
                 minute='0',
-                hour='11',
+                hour='10',
                 month='*',
                 week_day='WED',
                 year='*'
@@ -307,3 +307,16 @@ class MaxmindGeolite2Stack(Stack):
         )
 
         event.add_target(_targets.LambdaFunction(download))
+
+        eventtwo = _events.Rule(
+            self, 'eventtwo',
+            schedule=_events.Schedule.cron(
+                minute='0',
+                hour='10',
+                month='*',
+                week_day='SAT',
+                year='*'
+            )
+        )
+
+        eventtwo.add_target(_targets.LambdaFunction(download))
