@@ -60,9 +60,6 @@ def handler(event, context):
         s3_client.download_fileobj(os.environ['S3_BUCKET'], 'search.py', f) 
     f.close()
 
-    os.system('cd /tmp && python3 -m pip install --target=./ geoip2 --upgrade')
-    os.system('cd /tmp && python3 -m pip install --target=./ maxminddb --upgrade')
-
     with zipfile.ZipFile('/tmp/geoip2.zip', 'w') as zipf:
 
         zipf.write('/tmp/search.py','search.py')

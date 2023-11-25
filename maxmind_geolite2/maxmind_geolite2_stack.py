@@ -111,9 +111,24 @@ class MaxmindGeolite2Stack(Stack):
 
     ### LAMBDA LAYER ###
 
-        layer = _lambda.LayerVersion.from_layer_version_arn(
-            self, 'layer',
+        geoip2 = _lambda.LayerVersion.from_layer_version_arn(
+            self, 'geoip2',
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:geoip2:1'
+        )
+
+        getpublicip = _lambda.LayerVersion.from_layer_version_arn(
+            self, 'getpublicip',
             layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:9'
+        )
+
+        maxminddb = _lambda.LayerVersion.from_layer_version_arn(
+            self, 'maxminddb',
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:maxminddb:1'
+        )
+
+        requests = _lambda.LayerVersion.from_layer_version_arn(
+            self, 'requests',
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:requests:1'
         )
 
     ### STORAGE ###
@@ -130,19 +145,19 @@ class MaxmindGeolite2Stack(Stack):
         )
 
         bucket.add_lifecycle_rule(
-            expiration = Duration.days(21),
+            expiration = Duration.days(14),
             noncurrent_version_expiration = Duration.days(1),
             prefix = 'geoip2.zip'
         )
 
         bucket.add_lifecycle_rule(
-            expiration = Duration.days(21),
+            expiration = Duration.days(14),
             noncurrent_version_expiration = Duration.days(1),
             prefix = 'GeoLite2-City.mmdb'
         )
 
         bucket.add_lifecycle_rule(
-            expiration = Duration.days(21),
+            expiration = Duration.days(14),
             noncurrent_version_expiration = Duration.days(1),
             prefix = 'GeoLite2-ASN.mmdb'
         )
@@ -190,11 +205,14 @@ class MaxmindGeolite2Stack(Stack):
             environment = dict(
                 AWS_ACCOUNT = account
             ),
-            timeout = Duration.seconds(4),
+            timeout = Duration.seconds(7),
             role = role,
             memory_size = 128,
+            retry_attempts = 0,
             layers = [
-                layer
+                geoip2,
+                getpublicip,
+                maxminddb
             ]
         )
 
@@ -260,18 +278,24 @@ class MaxmindGeolite2Stack(Stack):
             )
         )
 
-        download = _lambda.DockerImageFunction(
+        download = _lambda.Function(
             self, 'download',
-            code = _lambda.DockerImageCode.from_image_asset('download'),
-            timeout = Duration.seconds(900),
-            role = build,
+            runtime = _lambda.Runtime.PYTHON_3_11,
+            code = _lambda.Code.from_asset('download'),
+            handler = 'download.handler',
             environment = dict(
                 AWS_ACCOUNT = account,
                 S3_BUCKET = bucket.bucket_name,
                 SSM_PARAMETER = maxmind_api_key_secure_ssm_parameter,
                 LAMBDA_FUNCTION = search.function_name
             ),
-            memory_size = 512
+            timeout = Duration.seconds(900),
+            role = build,
+            memory_size = 512,
+            layers = [
+                getpublicip,
+                requests
+            ]
         )
 
         downloadlogs = _logs.LogGroup(
@@ -306,7 +330,11 @@ class MaxmindGeolite2Stack(Stack):
             )
         )
 
-        event.add_target(_targets.LambdaFunction(download))
+        event.add_target(
+            _targets.LambdaFunction(
+                download
+            )
+        )
 
         eventtwo = _events.Rule(
             self, 'eventtwo',
@@ -319,4 +347,8 @@ class MaxmindGeolite2Stack(Stack):
             )
         )
 
-        eventtwo.add_target(_targets.LambdaFunction(download))
+        eventtwo.add_target(
+            _targets.LambdaFunction(
+                download
+            )
+        )
