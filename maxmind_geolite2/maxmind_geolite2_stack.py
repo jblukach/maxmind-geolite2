@@ -205,7 +205,7 @@ class MaxmindGeolite2Stack(Stack):
             environment = dict(
                 AWS_ACCOUNT = account
             ),
-            timeout = Duration.seconds(7),
+            timeout = Duration.seconds(11),
             role = role,
             memory_size = 128,
             retry_attempts = 0,
