@@ -205,7 +205,7 @@ class MaxmindGeolite2Stack(Stack):
             environment = dict(
                 AWS_ACCOUNT = account
             ),
-            timeout = Duration.seconds(30),
+            timeout = Duration.seconds(7),
             role = role,
             memory_size = 128,
             retry_attempts = 0,
@@ -323,7 +323,7 @@ class MaxmindGeolite2Stack(Stack):
             self, 'event',
             schedule=_events.Schedule.cron(
                 minute='0',
-                hour='10',
+                hour='9',
                 month='*',
                 week_day='WED',
                 year='*'
@@ -340,7 +340,7 @@ class MaxmindGeolite2Stack(Stack):
             self, 'eventtwo',
             schedule=_events.Schedule.cron(
                 minute='0',
-                hour='10',
+                hour='9',
                 month='*',
                 week_day='SAT',
                 year='*'
