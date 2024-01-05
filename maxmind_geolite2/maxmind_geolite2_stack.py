@@ -113,22 +113,22 @@ class MaxmindGeolite2Stack(Stack):
 
         geoip2 = _lambda.LayerVersion.from_layer_version_arn(
             self, 'geoip2',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:geoip2:2'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:geoip2:3'
         )
 
         getpublicip = _lambda.LayerVersion.from_layer_version_arn(
             self, 'getpublicip',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:9'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:10'
         )
 
         maxminddb = _lambda.LayerVersion.from_layer_version_arn(
             self, 'maxminddb',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:maxminddb:1'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:maxminddb:2'
         )
 
         requests = _lambda.LayerVersion.from_layer_version_arn(
             self, 'requests',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:requests:1'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:requests:2'
         )
 
     ### STORAGE ###
@@ -199,7 +199,7 @@ class MaxmindGeolite2Stack(Stack):
         search = _lambda.Function(
             self, 'search',
             function_name = 'geo',
-            runtime = _lambda.Runtime.PYTHON_3_11,
+            runtime = _lambda.Runtime.PYTHON_3_12,
             code = _lambda.Code.from_asset('search'),
             handler = 'search.handler',
             environment = dict(
@@ -280,7 +280,7 @@ class MaxmindGeolite2Stack(Stack):
 
         download = _lambda.Function(
             self, 'download',
-            runtime = _lambda.Runtime.PYTHON_3_11,
+            runtime = _lambda.Runtime.PYTHON_3_12,
             code = _lambda.Code.from_asset('download'),
             handler = 'download.handler',
             environment = dict(
