@@ -123,7 +123,7 @@ class MaxmindGeolite2Stack(Stack):
 
         maxminddb = _lambda.LayerVersion.from_layer_version_arn(
             self, 'maxminddb',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:maxminddb:2'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:maxminddb:3'
         )
 
         requests = _lambda.LayerVersion.from_layer_version_arn(
@@ -200,6 +200,7 @@ class MaxmindGeolite2Stack(Stack):
             self, 'search',
             function_name = 'geo',
             runtime = _lambda.Runtime.PYTHON_3_12,
+            architecture = _lambda.Architecture.ARM_64,
             code = _lambda.Code.from_asset('search'),
             handler = 'search.handler',
             environment = dict(
@@ -281,6 +282,7 @@ class MaxmindGeolite2Stack(Stack):
         download = _lambda.Function(
             self, 'download',
             runtime = _lambda.Runtime.PYTHON_3_12,
+            architecture = _lambda.Architecture.ARM_64,
             code = _lambda.Code.from_asset('download'),
             handler = 'download.handler',
             environment = dict(
@@ -292,6 +294,7 @@ class MaxmindGeolite2Stack(Stack):
             timeout = Duration.seconds(900),
             role = build,
             memory_size = 512,
+            retry_attempts = 0,
             layers = [
                 getpublicip,
                 requests
