@@ -17,3 +17,7 @@ https://geo.tundralabs.net/134.129.111.111
 ```
 
 This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.
+
+### Last Updated
+
+https://static.tundralabs.net/maxmind.updated

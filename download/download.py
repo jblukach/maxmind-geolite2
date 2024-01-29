@@ -1,4 +1,5 @@
 import boto3
+import datetime
 import json
 import os
 import requests
@@ -84,6 +85,21 @@ def handler(event, context):
         FunctionName = os.environ['LAMBDA_FUNCTION'],
         S3Bucket = os.environ['S3_BUCKET'],
         S3Key = 'geoip2.zip'
+    )
+
+    f = open('/tmp/maxmind.updated','w')
+    f.write(str(datetime.datetime.now()))
+    f.close()
+
+    s3 = boto3.resource('s3')
+
+    s3.meta.client.upload_file(
+        '/tmp/maxmind.updated',
+        'static.tundralabs.net',
+        'maxmind.updated',
+        ExtraArgs = {
+            'ContentType': "text/plain"
+        }
     )
 
     return {
