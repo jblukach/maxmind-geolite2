@@ -5,16 +5,17 @@ from aws_cdk import (
     Duration,
     RemovalPolicy,
     Stack,
+    aws_cloudwatch as _cloudwatch,
+    aws_cloudwatch_actions as _actions,
     aws_events as _events,
     aws_events_targets as _targets,
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_logs as _logs,
-    aws_logs_destinations as _destinations,
     aws_s3 as _s3,
     aws_s3_deployment as _deployment,
-    aws_sns_subscriptions as _subs,
-    aws_ssm as _ssm
+    aws_ssm as _ssm,
+    aws_sns as _sns
 )
 
 from constructs import Construct
@@ -169,16 +170,11 @@ class MaxmindGeolite2Stack(Stack):
             prune = False
         )
 
-    ### ERROR ###
+    ### TOPIC ###
 
-        error = _lambda.Function.from_function_arn(
-            self, 'error',
-            'arn:aws:lambda:'+region+':'+account+':function:shipit-error'
-        )
-
-        timeout = _lambda.Function.from_function_arn(
-            self, 'timeout',
-            'arn:aws:lambda:'+region+':'+account+':function:shipit-timeout'
+        topic = _sns.Topic.from_topic_arn(
+            self, 'topic',
+            topic_arn = 'arn:aws:sns:'+region+':'+account+':monitor'
         )
 
     ### SEARCH ###
@@ -236,18 +232,18 @@ class MaxmindGeolite2Stack(Stack):
             removal_policy = RemovalPolicy.DESTROY
         )
 
-        searchsub = _logs.SubscriptionFilter(
-            self, 'searchsub',
-            log_group = searchlogs,
-            destination = _destinations.LambdaDestination(error),
-            filter_pattern = _logs.FilterPattern.all_terms('ERROR')
+        searchalarm = _cloudwatch.Alarm(
+            self, 'searchalarm',
+            comparison_operator = _cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            threshold = 0,
+            evaluation_periods = 1,
+            metric = search.metric_errors(
+                period = Duration.minutes(1)
+            )
         )
 
-        searchtime= _logs.SubscriptionFilter(
-            self, 'searchtime',
-            log_group = searchlogs,
-            destination = _destinations.LambdaDestination(timeout),
-            filter_pattern = _logs.FilterPattern.all_terms('Task','timed','out')
+        searchalarm.add_alarm_action(
+            _actions.SnsAction(topic)
         )
 
     ### BUILD ###
@@ -308,18 +304,18 @@ class MaxmindGeolite2Stack(Stack):
             removal_policy = RemovalPolicy.DESTROY
         )
 
-        downloadsub = _logs.SubscriptionFilter(
-            self, 'downloadsub',
-            log_group = downloadlogs,
-            destination = _destinations.LambdaDestination(error),
-            filter_pattern = _logs.FilterPattern.all_terms('ERROR')
+        downloadalarm = _cloudwatch.Alarm(
+            self, 'downloadalarm',
+            comparison_operator = _cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+            threshold = 0,
+            evaluation_periods = 1,
+            metric = download.metric_errors(
+                period = Duration.minutes(1)
+            )
         )
 
-        downloadtime= _logs.SubscriptionFilter(
-            self, 'downloadtime',
-            log_group = downloadlogs,
-            destination = _destinations.LambdaDestination(timeout),
-            filter_pattern = _logs.FilterPattern.all_terms('Task','timed','out')
+        downloadalarm.add_alarm_action(
+            _actions.SnsAction(topic)
         )
 
         event = _events.Rule(
