@@ -10,13 +10,18 @@ def handler(event, context):
 
     ssm = boto3.client('ssm')
 
-    secret = ssm.get_parameter(
-        Name = os.environ['SSM_PARAMETER'], 
+    account = ssm.get_parameter(
+        Name = os.environ['SSM_PARAMETER_ACCT'], 
         WithDecryption = True
     )
 
-    url = 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key='+secret['Parameter']['Value']+'&suffix=tar.gz'
-    response = requests.get(url)  
+    secret = ssm.get_parameter(
+        Name = os.environ['SSM_PARAMETER_KEY'], 
+        WithDecryption = True
+    )
+
+    url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz'
+    response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
     with open('/tmp/maxmind.tar.gz', 'wb') as f:
         f.write(response.content)
     f.close()
@@ -37,8 +42,8 @@ def handler(event, context):
 
     response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_BUCKET'],'GeoLite2-City.mmdb')
 
-    url = 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key='+secret['Parameter']['Value']+'&suffix=tar.gz'
-    response = requests.get(url)  
+    url = 'https://download.maxmind.com/geoip/databases/GeoLite2-ASN/download?suffix=tar.gz'
+    response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
     with open('/tmp/maxmind2.tar.gz', 'wb') as f:
         f.write(response.content)
     f.close()

@@ -134,8 +134,6 @@ class MaxmindGeolite2Stack(Stack):
 
     ### STORAGE ###
 
-        maxmind_api_key_secure_ssm_parameter = '/maxmind/geolite2/api'
-
         bucket = _s3.Bucket(
             self, 'bucket',
             encryption = _s3.BucketEncryption.S3_MANAGED,
@@ -284,7 +282,8 @@ class MaxmindGeolite2Stack(Stack):
             environment = dict(
                 AWS_ACCOUNT = account,
                 S3_BUCKET = bucket.bucket_name,
-                SSM_PARAMETER = maxmind_api_key_secure_ssm_parameter,
+                SSM_PARAMETER_ACCT = '/maxmind/geolite2/account',
+                SSM_PARAMETER_KEY = '/maxmind/geolite2/api',
                 LAMBDA_FUNCTION = search.function_name
             ),
             timeout = Duration.seconds(900),
