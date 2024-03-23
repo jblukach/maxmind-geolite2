@@ -124,7 +124,7 @@ class MaxmindGeolite2Stack(Stack):
 
         maxminddb = _lambda.LayerVersion.from_layer_version_arn(
             self, 'maxminddb',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:maxminddb:3'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:maxminddb:4'
         )
 
         requests = _lambda.LayerVersion.from_layer_version_arn(
