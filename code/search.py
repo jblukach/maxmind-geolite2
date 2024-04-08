@@ -7,24 +7,12 @@ def handler(event, context):
     print(event)
 
     try:
-        iptype = ipaddress.ip_address(event['ip']) ### SLACK ###
-        if iptype.version == 4 or iptype.version == 6:
-            ipaddr = event['ip']
-    except:
-        try:                      
-            iptype = ipaddress.ip_address(event['rawPath'][1:]) ### URL ###
-            if iptype.version == 4 or iptype.version == 6:
-                ipaddr = event['rawPath'][1:]
-        except:
-            iptype = ipaddress.ip_address(event['headers']['x-forwarded-for']) ### USER ###
-            if iptype.version == 4 or iptype.version == 6:
-                ipaddr = event['headers']['x-forwarded-for']
-            pass
-        pass
 
-    try:
+        ip = event['rawPath'][1:]
+        iptype = ipaddress.ip_address(ip)
+
         with geoip2.database.Reader('GeoLite2-City.mmdb') as reader:
-            response = reader.city(ipaddr)
+            response = reader.city(ip)
             country_code = response.country.iso_code
             country_name = response.country.name
             state_code = response.subdivisions.most_specific.iso_code
@@ -36,7 +24,7 @@ def handler(event, context):
             cidr = response.traits.network
             desc = 'This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.'
         with geoip2.database.Reader('GeoLite2-ASN.mmdb') as reader2:
-            response2 = reader2.asn(ipaddr)
+            response2 = reader2.asn(ip)
             asn = response2.autonomous_system_number
             org = response2.autonomous_system_organization
         code = 200

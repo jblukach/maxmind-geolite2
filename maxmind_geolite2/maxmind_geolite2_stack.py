@@ -119,7 +119,7 @@ class MaxmindGeolite2Stack(Stack):
 
         getpublicip = _lambda.LayerVersion.from_layer_version_arn(
             self, 'getpublicip',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:10'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:11'
         )
 
         maxminddb = _lambda.LayerVersion.from_layer_version_arn(
@@ -129,7 +129,7 @@ class MaxmindGeolite2Stack(Stack):
 
         requests = _lambda.LayerVersion.from_layer_version_arn(
             self, 'requests',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:requests:2'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:requests:3'
         )
 
     ### STORAGE ###
@@ -226,7 +226,7 @@ class MaxmindGeolite2Stack(Stack):
         searchlogs = _logs.LogGroup(
             self, 'searchlogs',
             log_group_name = '/aws/lambda/'+search.function_name,
-            retention = _logs.RetentionDays.ONE_MONTH,
+            retention = _logs.RetentionDays.ONE_DAY,
             removal_policy = RemovalPolicy.DESTROY
         )
 
@@ -299,7 +299,7 @@ class MaxmindGeolite2Stack(Stack):
         downloadlogs = _logs.LogGroup(
             self, 'downloadlogs',
             log_group_name = '/aws/lambda/'+download.function_name,
-            retention = _logs.RetentionDays.ONE_MONTH,
+            retention = _logs.RetentionDays.ONE_DAY,
             removal_policy = RemovalPolicy.DESTROY
         )
 
