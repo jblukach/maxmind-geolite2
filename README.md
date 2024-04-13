@@ -14,4 +14,4 @@ This product includes GeoLite2 data created by MaxMind, available from https://w
 
 ### Last Updated
 
-https://static.tundralabs.net/maxmind.updated
+https://dl.4n6ir.com/maxmind-geolite2/last.updated
