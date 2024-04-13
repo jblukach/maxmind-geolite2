@@ -100,8 +100,8 @@ def handler(event, context):
 
     s3.meta.client.upload_file(
         '/tmp/maxmind.updated',
-        'static.tundralabs.net',
-        'maxmind.updated',
+        'public-file-browser-files-0affe034d8f7',
+        'maxmind-geolite2/last.updated',
         ExtraArgs = {
             'ContentType': "text/plain"
         }
