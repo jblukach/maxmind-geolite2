@@ -92,20 +92,59 @@ def handler(event, context):
         S3Key = 'geoip2.zip'
     )
 
-    f = open('/tmp/maxmind.updated','w')
-    f.write(str(datetime.datetime.now()))
+    token = ssm.get_parameter(
+        Name = os.environ['SSM_PARAMETER_GIT'], 
+        WithDecryption = True
+    )
+
+    headers = {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer '+token['Parameter']['Value'],
+        'X-GitHub-Api-Version': '2022-11-28'
+    }
+
+    year = datetime.datetime.now().strftime('%Y')
+    month = datetime.datetime.now().strftime('%m')
+    epoch = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+
+    data = '''{
+        "tag_name":"v'''+str(year)+'''.'''+str(month)+'''.'''+str(epoch)+'''",
+        "target_commitish":"main",
+        "name":"GeoLite2",
+        "body":"This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.",
+        "draft":false,
+        "prerelease":false,
+        "generate_release_notes":false
+    }'''
+
+    response = requests.post(
+        'https://api.github.com/repos/jblukach/maxmind-geolite2/releases',
+        headers=headers,
+        data=data
+    )
+
+    print(response.json())
+
+    headers = {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer '+token['Parameter']['Value'],
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/octet-stream'
+    }
+
+    params = {
+        "name":"GeoLite2.zip"
+    }
+
+    url = 'https://uploads.github.com/repos/jblukach/maxmind-geolite2/releases/'+str(response.json()['id'])+'/assets'
+
+    with open('/tmp/geoip2.zip', 'rb') as f:
+        data = f.read()
     f.close()
 
-    s3 = boto3.resource('s3')
+    response = requests.post(url, params=params, headers=headers, data=data)
 
-    s3.meta.client.upload_file(
-        '/tmp/maxmind.updated',
-        'public-file-browser-files-0affe034d8f7',
-        'maxmind-geolite2/last.updated',
-        ExtraArgs = {
-            'ContentType': "text/plain"
-        }
-    )
+    print(response.json())
 
     return {
         'statusCode': 200,

@@ -119,7 +119,7 @@ class MaxmindGeolite2Stack(Stack):
 
         getpublicip = _lambda.LayerVersion.from_layer_version_arn(
             self, 'getpublicip',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:11'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:getpublicip:12'
         )
 
         maxminddb = _lambda.LayerVersion.from_layer_version_arn(
@@ -129,7 +129,7 @@ class MaxmindGeolite2Stack(Stack):
 
         requests = _lambda.LayerVersion.from_layer_version_arn(
             self, 'requests',
-            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:requests:4'
+            layer_version_arn = 'arn:aws:lambda:'+region+':070176467818:layer:requests:5'
         )
 
     ### STORAGE ###
@@ -226,7 +226,7 @@ class MaxmindGeolite2Stack(Stack):
         searchlogs = _logs.LogGroup(
             self, 'searchlogs',
             log_group_name = '/aws/lambda/'+search.function_name,
-            retention = _logs.RetentionDays.ONE_DAY,
+            retention = _logs.RetentionDays.INFINITE,
             removal_policy = RemovalPolicy.DESTROY
         )
 
@@ -284,6 +284,7 @@ class MaxmindGeolite2Stack(Stack):
                 S3_BUCKET = bucket.bucket_name,
                 SSM_PARAMETER_ACCT = '/maxmind/geolite2/account',
                 SSM_PARAMETER_KEY = '/maxmind/geolite2/api',
+                SSM_PARAMETER_GIT = '/github/releases',
                 LAMBDA_FUNCTION = search.function_name
             ),
             timeout = Duration.seconds(900),
