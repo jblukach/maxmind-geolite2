@@ -5,6 +5,9 @@ from aws_cdk import (
     Duration,
     RemovalPolicy,
     Stack,
+    aws_certificatemanager as _acm,
+    aws_cloudfront as _cloudfront,
+    aws_cloudfront_origins as _origins,
     aws_cloudwatch as _cloudwatch,
     aws_cloudwatch_actions as _actions,
     aws_events as _events,
@@ -12,9 +15,12 @@ from aws_cdk import (
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_logs as _logs,
+    aws_route53 as _route53,
+    aws_route53_targets as _r53targets,
     aws_s3 as _s3,
     aws_s3_deployment as _deployment,
-    aws_sns as _sns
+    aws_sns as _sns,
+    aws_ssm as _ssm
 )
 
 from constructs import Construct
@@ -108,6 +114,12 @@ class MaxmindGeolite2Stack(Stack):
                 {"id":"AwsSolutions-IAM4","reason":"The IAM user, role, or group uses AWS managed policies."},
                 {"id":"AwsSolutions-IAM5","reason":"The IAM entity contains wildcard permissions and does not have a cdk-nag rule suppression with evidence for those permission."},
                 {"id":"AwsSolutions-L1","reason":"The non-container Lambda function is not configured to use the latest runtime version."},
+                {"id":"AwsSolutions-CFR1","reason":"The CloudFront distribution may require Geo restrictions."},
+                {"id":"AwsSolutions-CFR2","reason":"The CloudFront distribution may require integration with AWS WAF."},
+                {"id":"AwsSolutions-CFR3","reason":"The CloudFront distribution does not have access logging enabled."},
+                {"id":"AwsSolutions-CFR4","reason":"The CloudFront distribution allows for SSLv3 or TLSv1 for HTTPS viewer connections."},
+                {"id":"AwsSolutions-CFR5","reason":"The CloudFront distributions uses SSLv3 or TLSv1 for communication to the origin."},
+                {"id":"AwsSolutions-CFR6","reason":"The CloudFront distribution does not use an origin access identity with an S3 origin."},
             ]
         )
 
@@ -326,4 +338,80 @@ class MaxmindGeolite2Stack(Stack):
             _targets.LambdaFunction(
                 download
             )
+        )
+
+    ### HOSTZONE ###
+
+        hostzoneid = _ssm.StringParameter.from_string_parameter_attributes(
+            self, 'hostzoneid',
+            parameter_name = '/r53/tundralabs.net'
+        )
+
+        hostzone = _route53.HostedZone.from_hosted_zone_attributes(
+             self, 'hostzone',
+             hosted_zone_id = hostzoneid.string_value,
+             zone_name = 'tundralabs.net'
+        )   
+
+    ### CLOUDFRONT LOGS ###
+
+        maxmindgeolite2cloudfrontlogs = _s3.Bucket(
+            self, 'maxmindgeolite2cloudfrontlogs',
+            bucket_name = 'maxmindgeolite2cloudfrontlogs',
+            encryption = _s3.BucketEncryption.S3_MANAGED,
+            object_ownership = _s3.ObjectOwnership.OBJECT_WRITER,
+            block_public_access = _s3.BlockPublicAccess.BLOCK_ALL,
+            removal_policy = RemovalPolicy.DESTROY,
+            auto_delete_objects = True,
+            enforce_ssl = True,
+            versioned = True
+        )
+
+        maxmindgeolite2cloudfrontlogs.add_lifecycle_rule(
+            expiration = Duration.days(400),
+            noncurrent_version_expiration = Duration.days(1)
+        )
+
+    ### ACM CERTIFICATE ###
+
+        acm = _acm.Certificate(
+            self, 'acm',
+            domain_name = 'geo.tundralabs.net',
+            validation = _acm.CertificateValidation.from_dns(hostzone)
+        )
+
+    ### CLOUDFRONT ###
+
+        geodistribution = _cloudfront.Distribution(
+            self, 'geodistribution',
+            comment = 'geo.tundralabs.net',
+            default_behavior = _cloudfront.BehaviorOptions(
+                origin = _origins.FunctionUrlOrigin(url)
+            ),
+            domain_names = [
+                'geo.tundralabs.net'
+            ],
+            error_responses = [
+                _cloudfront.ErrorResponse(
+                    http_status = 404,
+                    response_http_status = 200,
+                    response_page_path = '/'
+                )
+            ],
+            certificate = acm,
+            log_bucket = maxmindgeolite2cloudfrontlogs,
+            log_includes_cookies = True,
+            minimum_protocol_version = _cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+            price_class = _cloudfront.PriceClass.PRICE_CLASS_100,
+            http_version = _cloudfront.HttpVersion.HTTP2_AND_3,
+            enable_ipv6 = True
+        )
+
+    ### DNS ENTRY ###
+
+        geourl = _route53.ARecord(
+            self, 'geourl',
+            zone = hostzone,
+            record_name = 'geo.tundralabs.net',
+            target = _route53.RecordTarget.from_alias(_r53targets.CloudFrontTarget(geodistribution))
         )
