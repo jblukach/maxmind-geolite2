@@ -66,7 +66,7 @@ def handler(event, context):
         s3_client.download_fileobj(os.environ['S3_BUCKET'], 'search.py', f) 
     f.close()
 
-    with zipfile.ZipFile('/tmp/geoip2.zip', 'w') as zipf:
+    with zipfile.ZipFile('/tmp/geoip2.zip', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zipf:
 
         zipf.write('/tmp/search.py','search.py')
         zipf.write('/tmp/GeoLite2-ASN.mmdb','GeoLite2-ASN.mmdb')
@@ -81,6 +81,8 @@ def handler(event, context):
             for file in files:
                 fullpath = os.path.join(root, file)
                 zipf.write(fullpath, fullpath[5:])
+
+    zipf.close()
 
     response = s3_client.upload_file('/tmp/geoip2.zip',os.environ['S3_BUCKET'],'geoip2.zip')
 
