@@ -176,6 +176,71 @@ class MaxmindGeolite2Stack(Stack):
             slack_channel_id = channel.string_value
         )
 
+        slack.add_to_role_policy(
+            _iam.PolicyStatement(
+                effect = _iam.Effect.ALLOW,
+                actions=[
+                    "application-autoscaling:DescribeScalingPolicies",
+                    "application-signals:BatchGet*",
+                    "application-signals:Get*",
+                    "application-signals:List*",
+                    "autoscaling:Describe*",
+                    "cloudwatch:BatchGet*",
+                    "cloudwatch:Describe*",
+                    "cloudwatch:GenerateQuery",
+                    "cloudwatch:Get*",
+                    "cloudwatch:List*",
+                    "logs:Get*",
+                    "logs:List*",
+                    "logs:StartQuery",
+                    "logs:StopQuery",
+                    "logs:Describe*",
+                    "logs:TestMetricFilter",
+                    "logs:FilterLogEvents",
+                    "logs:StartLiveTail",
+                    "logs:StopLiveTail",
+                    "oam:ListSinks",
+                    "sns:Get*",
+                    "sns:List*",
+                    "rum:BatchGet*",
+                    "rum:Get*",
+                    "rum:List*",
+                    "synthetics:Describe*",
+                    "synthetics:Get*",
+                    "synthetics:List*",
+                    "xray:BatchGet*",
+                    "xray:Get*"
+                ],
+                resources = [
+                    "*"
+                ]
+            )
+        )
+
+        slack.add_to_role_policy(
+            _iam.PolicyStatement(
+                effect = _iam.Effect.ALLOW,
+                actions=[
+                    "oam:ListAttachedLinks"
+                ],
+                resources = [
+                    "arn:aws:oam:*:*:sink/*"
+                ]
+            )
+        )
+
+        slack.add_to_role_policy(
+            _iam.PolicyStatement(
+                effect = _iam.Effect.ALLOW,
+                actions=[
+                    "iam:GetRole"
+                ],
+                resources = [
+                    "arn:aws:iam::*:role/aws-service-role/application-signals.cloudwatch.amazonaws.com/AWSServiceRoleForCloudWatchApplicationSignals"
+                ]
+            )
+        )
+
         topic = _sns.Topic(
             self, 'topic',
             display_name = 'maxmind',
