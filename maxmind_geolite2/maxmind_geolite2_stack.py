@@ -138,12 +138,12 @@ class MaxmindGeolite2Stack(Stack):
 
         geoip2 = _lambda.LayerVersion.from_layer_version_arn(
             self, 'geoip2',
-            layer_version_arn = 'arn:aws:lambda:'+region+':'+extensions.string_value+':layer:geoip2:3'
+            layer_version_arn = 'arn:aws:lambda:'+region+':'+extensions.string_value+':layer:geoip2:4'
         )
 
         getpublicip = _lambda.LayerVersion.from_layer_version_arn(
             self, 'getpublicip',
-            layer_version_arn = 'arn:aws:lambda:'+region+':'+extensions.string_value+':layer:getpublicip:12'
+            layer_version_arn = 'arn:aws:lambda:'+region+':'+extensions.string_value+':layer:getpublicip:13'
         )
 
         maxminddb = _lambda.LayerVersion.from_layer_version_arn(
@@ -153,7 +153,7 @@ class MaxmindGeolite2Stack(Stack):
 
         requests = _lambda.LayerVersion.from_layer_version_arn(
             self, 'requests',
-            layer_version_arn = 'arn:aws:lambda:'+region+':'+extensions.string_value+':layer:requests:5'
+            layer_version_arn = 'arn:aws:lambda:'+region+':'+extensions.string_value+':layer:requests:6'
         )
 
     ### CHATBOT ###
@@ -290,7 +290,7 @@ class MaxmindGeolite2Stack(Stack):
         search = _lambda.Function(
             self, 'search',
             function_name = 'geo',
-            runtime = _lambda.Runtime.PYTHON_3_12,
+            runtime = _lambda.Runtime.PYTHON_3_13,
             architecture = _lambda.Architecture.ARM_64,
             code = _lambda.Code.from_asset('search'),
             handler = 'search.handler',
@@ -364,7 +364,7 @@ class MaxmindGeolite2Stack(Stack):
 
         download = _lambda.Function(
             self, 'download',
-            runtime = _lambda.Runtime.PYTHON_3_12,
+            runtime = _lambda.Runtime.PYTHON_3_13,
             architecture = _lambda.Architecture.ARM_64,
             code = _lambda.Code.from_asset('download'),
             handler = 'download.handler',
