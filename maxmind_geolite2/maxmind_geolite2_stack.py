@@ -133,6 +133,17 @@ class MaxmindGeolite2Stack(Stack):
             )
         )
 
+        role.add_to_policy(
+            _iam.PolicyStatement(
+                actions = [
+                    'apigateway:GET'
+                ],
+                resources = [
+                    '*'
+                ]
+            )
+        )
+
         search = _lambda.Function(
             self, 'search',
             runtime = _lambda.Runtime.PYTHON_3_13,
@@ -310,4 +321,30 @@ class MaxmindGeolite2Stack(Stack):
                 _api.HttpMethod.GET
             ],
             integration = integration
+        )
+
+    ### DNS RECORDS
+
+        ipv4dns = _route53.ARecord(
+            self, 'ipv4dns',
+            zone = hostzone,
+            record_name = 'geo.4n6ir.com',
+            target = _route53.RecordTarget.from_alias(
+                _r53targets.ApiGatewayv2DomainProperties(
+                    domain.regional_domain_name,
+                    domain.regional_hosted_zone_id
+                )
+            )
+        )
+
+        ipv6dns = _route53.AaaaRecord(
+            self, 'ipv6dns',
+            zone = hostzone,
+            record_name = 'geo.4n6ir.com',
+            target = _route53.RecordTarget.from_alias(
+                _r53targets.ApiGatewayv2DomainProperties(
+                    domain.regional_domain_name,
+                    domain.regional_hosted_zone_id
+                )
+            )
         )
