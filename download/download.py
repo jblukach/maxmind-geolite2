@@ -20,6 +20,24 @@ def handler(event, context):
         WithDecryption = True
     )
 
+    s3_client = boto3.client('s3')
+
+    url = 'https://download.maxmind.com/geoip/databases/GeoLite2-ASN-CSV/download?suffix=zip'
+    response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
+    with open('/tmp/GeoLite2-ASN-CSV.zip', 'wb') as f:
+        f.write(response.content)
+    f.close()
+
+    response = s3_client.upload_file('/tmp/GeoLite2-ASN-CSV.zip',os.environ['S3_BUCKET'],'GeoLite2-ASN-CSV.zip')
+
+    url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City-CSV/download?suffix=zip'
+    response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
+    with open('/tmp/GeoLite2-City-CSV.zip', 'wb') as f:
+        f.write(response.content)
+    f.close()
+
+    response = s3_client.upload_file('/tmp/GeoLite2-City-CSV.zip',os.environ['S3_BUCKET'],'GeoLite2-City-CSV.zip')
+
     url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz'
     response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
     with open('/tmp/maxmind.tar.gz', 'wb') as f:
@@ -37,8 +55,6 @@ def handler(event, context):
                     w.write(content)
         tar.close()
     w.close()
-
-    s3_client = boto3.client('s3')
 
     response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_BUCKET'],'GeoLite2-City.mmdb')
 

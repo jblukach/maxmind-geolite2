@@ -6,7 +6,7 @@ https://dev.maxmind.com/geoip/geolite2-free-geolocation-data
 
 
 ```
-https://geo.tundralabs.net/134.129.111.111
+https://geo.4n6ir.com/?134.129.111.111
 ```
 
 This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.

@@ -8,7 +8,7 @@ def handler(event, context):
 
     try:
 
-        ip = event['rawPath'][1:]
+        ip = event['rawQueryString']
         iptype = ipaddress.ip_address(ip)
 
         with geoip2.database.Reader('GeoLite2-City.mmdb') as reader:
