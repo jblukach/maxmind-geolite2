@@ -312,7 +312,8 @@ class MaxmindGeolite2Stack(Stack):
             description = 'This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.',
             default_domain_mapping = _api.DomainMappingOptions(
                 domain_name = domain
-            )
+            ),
+            ip_address_type = _api.IpAddressType.DUAL_STACK
         )
 
         api.add_routes(
