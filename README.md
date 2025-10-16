@@ -57,19 +57,19 @@ Python’s built-in **`ipaddress`** module provides IP validation and classifica
 
 | **Field** | **Description (from Python docs)** | **Use** |
 |------------|------------------------------------|---------|
-| **version** | Indicates IPv4 (`4`) or IPv6 (`6`). | Determines protocol handling. |
-| **multicast** | True if IP is in multicast range (`224.0.0.0/4`, `ff00::/8`). | Identify non-unicast traffic. |
-| **private** | True if IP is in a private range (`10.0.0.0/8`, `fc00::/7`). | Detect internal network traffic. |
-| **global** | True if the IP is globally routable (public). | Confirms external Internet accessibility. |
-| **unspecified** | True if IP is unspecified (`0.0.0.0`, `::`). | Marks placeholder or default IPs. |
-| **reserved** | True for reserved ranges (`240.0.0.0/4`). | Exclude non-routable IPs. |
-| **loopback** | True if IP is loopback (`127.0.0.0/8`, `::1`). | Identify self-referential traffic. |
-| **link_local** | True if IP is link-local (`169.254.0.0/16`, `fe80::/10`). | Detect local-only addresses. |
-| **site_local** | True for site-local IPv6 (`fec0::/10`), deprecated. | Detects legacy IPv6 internal ranges. |
-| **ipv4_mapped** | IPv4 address embedded within an IPv6 (`::ffff:0:0/96`), or `None`. | Useful in dual-stack environments. |
-| **ipv6_mapped** | IPv6 representation of an IPv4 address, or `None`. | Facilitates IPv4–IPv6 interoperability. |
-| **sixtofour** | Extracts IPv4 from 6to4 addresses (`2002::/16`). | Detect legacy IPv6-over-IPv4 tunnels. |
-| **teredo** | Returns IPv4 tuple for Teredo (`2001::/32`) addresses. | Diagnose IPv6-over-IPv4 tunnels. |
+| **version** | IP protocol version: `4` for IPv4 or `6` for IPv6. Example: `192.0.2.1` → IPv4, `2001:db8::1` → IPv6. | Distinguishes parsing and handling logic for IPv4 vs. IPv6 systems. |
+| **multicast** (`is_multicast`) | True if the address is in a multicast range: <br>• IPv4: `224.0.0.0/4` ([RFC 1112](https://datatracker.ietf.org/doc/html/rfc1112)) <br>• IPv6: `ff00::/8` ([RFC 4291](https://datatracker.ietf.org/doc/html/rfc4291)) <br>Examples: `239.255.255.250`, `ff02::1`. | Identify multicast traffic (e.g., streaming, discovery protocols). |
+| **private** (`is_private`) | True for private/local ranges: <br>• IPv4: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` ([RFC 1918](https://datatracker.ietf.org/doc/html/rfc1918)) <br>• IPv6: `fc00::/7` (Unique Local, [RFC 4193](https://datatracker.ietf.org/doc/html/rfc4193)) <br>Examples: `192.168.1.10`, `fd00::1`. | Detect LAN or VPN IPs excluded from public routing. |
+| **global** (`is_global`) | True if the address is globally routable (not private, loopback, or reserved): <br>• IPv4 public space per [RFC 5735](https://datatracker.ietf.org/doc/html/rfc5735) <br>• IPv6 global unicast (`2000::/3`, [RFC 4291](https://datatracker.ietf.org/doc/html/rfc4291)) <br>Example: `8.8.8.8`, `2001:4860:4860::8888`. | Identify external, Internet-facing hosts or endpoints. |
+| **unspecified** (`is_unspecified`) | True if IP is the “unspecified” address — used when no real address is assigned: <br>• IPv4: `0.0.0.0` <br>• IPv6: `::` ([RFC 4291](https://datatracker.ietf.org/doc/html/rfc4291)) | Identify placeholder or default routes before configuration. |
+| **reserved** (`is_reserved`) | True for ranges held for future or special use: <br>• IPv4: `240.0.0.0/4` ([RFC 5735](https://datatracker.ietf.org/doc/html/rfc5735)) <br>• IPv6: reserved blocks per [RFC 5156](https://datatracker.ietf.org/doc/html/rfc5156). <br>Examples: `240.0.0.1`, `2001:10::`. | Exclude non-standard or experimental addresses from analytics. |
+| **loopback** (`is_loopback`) | True if IP is for self-reference: <br>• IPv4: `127.0.0.0/8` ([RFC 1122](https://datatracker.ietf.org/doc/html/rfc1122)) <br>• IPv6: `::1` ([RFC 4291](https://datatracker.ietf.org/doc/html/rfc4291)) | Detect internal host testing or local service communication. |
+| **link_local** (`is_link_local`) | True for addresses valid only within one network segment: <br>• IPv4: `169.254.0.0/16` ([RFC 3927](https://datatracker.ietf.org/doc/html/rfc3927)) <br>• IPv6: `fe80::/10` ([RFC 4291](https://datatracker.ietf.org/doc/html/rfc4291)) <br>Examples: `169.254.1.1`, `fe80::1`. | Identify auto-assigned addresses limited to local broadcast domains. |
+| **site_local** (`is_site_local`) | True for deprecated IPv6 site-local addresses (`fec0::/10`, [RFC 3879](https://datatracker.ietf.org/doc/html/rfc3879)). Example: `fec0::1`. | Detect legacy internal IPv6 addressing in older systems. |
+| **ipv4_mapped** | For IPv6-mapped IPv4 addresses (`::ffff:0:0/96`, [RFC 4291](https://datatracker.ietf.org/doc/html/rfc4291)): returns the embedded IPv4 or `None`. <br>Example: `::ffff:192.0.2.128`. | Enables IPv4 compatibility within IPv6-only systems. |
+| **ipv6_mapped** | Returns IPv6 equivalent for an IPv4 address when mapped, or `None`. <br>Example: IPv4 `203.0.113.45` → IPv6 `::ffff:203.0.113.45`. | Facilitates IPv4–IPv6 dual-stack interoperability. |
+| **sixtofour** | For 6to4 transition addresses (`2002::/16`, [RFC 3056](https://datatracker.ietf.org/doc/html/rfc3056)): extracts embedded IPv4; else `None`. <br>Example: `2002:c000:0204::` → `192.0.2.4`. | Detect older IPv6-over-IPv4 tunneling deployments. |
+| **teredo** | For Teredo tunneling (`2001::/32`, [RFC 4380](https://datatracker.ietf.org/doc/html/rfc4380)): returns `(server, client)` IPv4 tuple; else `None`. <br>Example: `2001:0000:4136:e378:8000:63bf:3fff:fdd2`. | Diagnose IPv6 connectivity through NAT traversal (Teredo tunnels). |
 
 ---
 
