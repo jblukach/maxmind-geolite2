@@ -40,6 +40,7 @@ def handler(event, context):
     url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz'
     update = requests.head(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
 
+    print('City:', update.headers['last-modified'])
     with open('/tmp/city.updated', 'w') as f:
         f.write(update.headers['last-modified'])
     f.close()
@@ -83,6 +84,7 @@ def handler(event, context):
     url = 'https://download.maxmind.com/geoip/databases/GeoLite2-ASN/download?suffix=tar.gz'
     update = requests.head(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
 
+    print('ASN:', update.headers['last-modified'])
     with open('/tmp/asn.updated', 'w') as f:
         f.write(update.headers['last-modified'])
     f.close()

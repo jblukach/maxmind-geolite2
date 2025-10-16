@@ -13,18 +13,31 @@ def handler(event, context):
         ipaddr = ipaddress.ip_address(ip)
         multicast = ipaddr.is_multicast
         private = ipaddr.is_private
+        globalpublic = ipaddr.is_global
         unspecified = ipaddr.is_unspecified
         reserved = ipaddr.is_reserved
         loopback = ipaddr.is_loopback
         link_local = ipaddr.is_link_local
+        try:
+            site_local = ipaddr.is_site_local
+        except:
+            site_local = None
         version = ipaddress.ip_network(ip).version
         try:
             ipv4mapped = ipaddr.ipv4_mapped
-            sixtofour = ipaddr.sixtofour
-            teredo = ipaddr.teredo
         except:
             ipv4mapped = None
+        try:
+            ipv6mapped = ipaddr.ipv6_mapped
+        except:
+            ipv6mapped = None
+        try:
+            sixtofour = ipaddr.sixtofour
+        except:
             sixtofour = None
+        try:
+            teredo = ipaddr.teredo
+        except:
             teredo = None
 
         try:
@@ -74,28 +87,37 @@ def handler(event, context):
         code = 200
         msg = {
             'ip':str(ipaddr),
-            'country':country_name,
-            'c_iso':country_code,
-            'state':state_name,
-            's_iso':state_code,
-            'city':city_name,
-            'zip':zip_code,
-            'latitude':latitude,
-            'longitude':longitude,
-            'cidr':str(cidr),
-            'asn':asn,
-            'org':org,
-            'net':str(net),
-            'version':version,
-            'multicast':multicast,
-            'private':private,
-            'unspecified':unspecified,
-            'reserved':reserved,
-            'loopback':loopback,
-            'link_local':link_local,
-            'ipv4_mapped':str(ipv4mapped),
-            'sixtofour':str(sixtofour),
-            'teredo':str(teredo),
+            'geo': {
+                'country':country_name,
+                'c_iso':country_code,
+                'state':state_name,
+                's_iso':state_code,
+                'city':city_name,
+                'zip':zip_code,
+                'latitude':latitude,
+                'longitude':longitude,
+                'cidr':str(cidr)
+            },
+            'asn': {
+                'id': asn,
+                'org': org,
+                'net': str(net)
+            },
+            'ipaddress': {
+                'version': version,
+                'multicast': multicast,
+                'private': private,
+                'global': globalpublic,
+                'unspecified': unspecified,
+                'reserved': reserved,
+                'loopback': loopback,
+                'link_local': link_local,
+                'site_local': site_local,
+                'ipv4_mapped': str(ipv4mapped),
+                'ipv6_mapped': str(ipv6mapped),
+                'sixtofour': str(sixtofour),
+                'teredo': str(teredo)
+            },
             'attribution':desc,
             'geolite2-asn.mmdb':asnupdated,
             'geolite2-city.mmdb':cityupdated
