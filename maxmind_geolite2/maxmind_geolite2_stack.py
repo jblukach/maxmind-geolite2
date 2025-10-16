@@ -62,7 +62,23 @@ class MaxmindGeolite2Stack(Stack):
             layer_version_arn = pkgrequests.string_value
         )
 
-    ### S3 BUCKET ###
+    ### S3 BUCKETS ###
+
+        archive = _s3.Bucket(
+            self, 'archive',
+            bucket_name = 'maxmindgeolite2archive',
+            encryption = _s3.BucketEncryption.S3_MANAGED,
+            block_public_access = _s3.BlockPublicAccess.BLOCK_ALL,
+            removal_policy = RemovalPolicy.DESTROY,
+            auto_delete_objects = True,
+            enforce_ssl = True,
+            versioned = False
+        )
+
+        archive.add_lifecycle_rule(
+            expiration = Duration.days(30),
+            noncurrent_version_expiration = Duration.days(30)
+        )
 
         bucket = _s3.Bucket(
             self, 'bucket',
@@ -117,6 +133,51 @@ class MaxmindGeolite2Stack(Stack):
         )
 
         bucket.add_to_resource_policy(object_policy)
+
+        research = _s3.Bucket(
+            self, 'research',
+            bucket_name = 'maxmindgeolite2research',
+            encryption = _s3.BucketEncryption.S3_MANAGED,
+            block_public_access = _s3.BlockPublicAccess.BLOCK_ALL,
+            removal_policy = RemovalPolicy.DESTROY,
+            auto_delete_objects = False,
+            enforce_ssl = True,
+            versioned = False
+        )
+
+        temporary = _s3.Bucket(
+            self, 'temporary',
+            bucket_name = 'maxmindgeolite2temporary',
+            encryption = _s3.BucketEncryption.S3_MANAGED,
+            block_public_access = _s3.BlockPublicAccess.BLOCK_ALL,
+            removal_policy = RemovalPolicy.DESTROY,
+            auto_delete_objects = True,
+            enforce_ssl = True,
+            versioned = False
+        )
+
+        temporary.add_lifecycle_rule(
+            expiration = Duration.days(1),
+            noncurrent_version_expiration = Duration.days(1)
+        )
+
+    ### SSM PARAMETERS ###
+
+        asnparameter = _ssm.StringParameter(
+            self, 'asnparameter',
+            parameter_name = '/maxmind/geolite2/asn',
+            string_value = 'EMPTY',
+            description = 'MaxMind GeoLite2 ASN Last Updated',
+            tier = _ssm.ParameterTier.STANDARD
+        )
+
+        cityparameter = _ssm.StringParameter(
+            self, 'cityparameter',
+            parameter_name = '/maxmind/geolite2/city',
+            string_value = 'EMPTY',
+            description = 'MaxMind GeoLite2 City Last Updated',
+            tier = _ssm.ParameterTier.STANDARD
+        )
 
     ### SEARCH ###
 
@@ -187,7 +248,8 @@ class MaxmindGeolite2Stack(Stack):
                     'lambda:UpdateFunctionCode',
                     's3:GetObject',
                     's3:PutObject',
-                    'ssm:GetParameter'
+                    'ssm:GetParameter',
+                    'ssm:PutParameter'
                 ],
                 resources = [
                     '*'
@@ -202,10 +264,13 @@ class MaxmindGeolite2Stack(Stack):
             code = _lambda.Code.from_asset('download'),
             handler = 'download.handler',
             environment = dict(
+                S3_ARCHIVE = archive.bucket_name,
                 S3_BUCKET = bucket.bucket_name,
+                S3_RESEARCH = research.bucket_name,
                 SSM_PARAMETER_ACCT = '/maxmind/geolite2/account',
                 SSM_PARAMETER_KEY = '/maxmind/geolite2/api',
-                SSM_PARAMETER_GIT = '/github/releases',
+                SSM_PARAMETER_ASN = '/maxmind/geolite2/asn',
+                SSM_PARAMETER_CITY = '/maxmind/geolite2/city',
                 LAMBDA_FUNCTION = search.function_name
             ),
             ephemeral_storage_size = Size.gibibytes(1),
@@ -226,33 +291,16 @@ class MaxmindGeolite2Stack(Stack):
 
         event = _events.Rule(
             self, 'event',
-            schedule=_events.Schedule.cron(
-                minute='0',
-                hour='0',
-                month='*',
-                week_day='WED',
-                year='*'
+            schedule = _events.Schedule.cron(
+                minute = '0',
+                hour = '*',
+                month = '*',
+                week_day = '*',
+                year = '*'
             )
         )
 
         event.add_target(
-            _targets.LambdaFunction(
-                download
-            )
-        )
-
-        eventtwo = _events.Rule(
-            self, 'eventtwo',
-            schedule=_events.Schedule.cron(
-                minute='0',
-                hour='0',
-                month='*',
-                week_day='SAT',
-                year='*'
-            )
-        )
-
-        eventtwo.add_target(
             _targets.LambdaFunction(
                 download
             )

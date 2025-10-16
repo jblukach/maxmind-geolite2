@@ -15,6 +15,16 @@ def handler(event, context):
         WithDecryption = True
     )
 
+    asn = ssm.get_parameter(
+        Name = os.environ['SSM_PARAMETER_ASN'], 
+        WithDecryption = False
+    )
+
+    city = ssm.get_parameter(
+        Name = os.environ['SSM_PARAMETER_CITY'], 
+        WithDecryption = False
+    )
+
     secret = ssm.get_parameter(
         Name = os.environ['SSM_PARAMETER_KEY'], 
         WithDecryption = True
@@ -22,61 +32,98 @@ def handler(event, context):
 
     s3_client = boto3.client('s3')
 
-    url = 'https://download.maxmind.com/geoip/databases/GeoLite2-ASN-CSV/download?suffix=zip'
-    response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
-    with open('/tmp/GeoLite2-ASN-CSV.zip', 'wb') as f:
-        f.write(response.content)
-    f.close()
-
-    response = s3_client.upload_file('/tmp/GeoLite2-ASN-CSV.zip',os.environ['S3_BUCKET'],'GeoLite2-ASN-CSV.zip')
-
-    url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City-CSV/download?suffix=zip'
-    response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
-    with open('/tmp/GeoLite2-City-CSV.zip', 'wb') as f:
-        f.write(response.content)
-    f.close()
-
-    response = s3_client.upload_file('/tmp/GeoLite2-City-CSV.zip',os.environ['S3_BUCKET'],'GeoLite2-City-CSV.zip')
+    year = datetime.datetime.now().strftime('%Y')
+    month = datetime.datetime.now().strftime('%m')
+    day = datetime.datetime.now().strftime('%d')
+    hour = datetime.datetime.now().strftime('%H')
 
     url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz'
-    response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
-    with open('/tmp/maxmind.tar.gz', 'wb') as f:
-        f.write(response.content)
+    update = requests.head(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
+
+    with open('/tmp/city.updated', 'w') as f:
+        f.write(update.headers['last-modified'])
     f.close()
 
-    with open('/tmp/GeoLite2-City.mmdb', 'wb') as w:
-        with tarfile.open('/tmp/maxmind.tar.gz', 'r:gz') as tar:
-            for member in tar.getmembers():
-                if os.path.splitext(member.name)[1] == '.mmdb':
-                    r = tar.extractfile(member)
-                    if r is not None:
-                        content = r.read()
-                    r.close
-                    w.write(content)
-        tar.close()
-    w.close()
+    if city['Parameter']['Value'] != update.headers['last-modified']:
 
-    response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_BUCKET'],'GeoLite2-City.mmdb')
+        print("Downloading GeoLite2-City.mmdb")
+
+        url = 'https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz'
+        response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
+        with open('/tmp/maxmind.tar.gz', 'wb') as f:
+            f.write(response.content)
+        f.close()
+
+        with open('/tmp/GeoLite2-City.mmdb', 'wb') as w:
+            with tarfile.open('/tmp/maxmind.tar.gz', 'r:gz') as tar:
+                for member in tar.getmembers():
+                    if os.path.splitext(member.name)[1] == '.mmdb':
+                        r = tar.extractfile(member)
+                        if r is not None:
+                            content = r.read()
+                        r.close()
+                        w.write(content)
+            tar.close()
+        w.close()
+
+        response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_BUCKET'],'GeoLite2-City.mmdb')
+        response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_ARCHIVE'],year+'/'+month+'/'+day+'/'+hour+'/GeoLite2-City.mmdb')
+        response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_RESEARCH'],year+'/'+month+'/'+day+'/'+hour+'/GeoLite2-City.mmdb')
+
+        ssm.put_parameter(
+            Name = os.environ['SSM_PARAMETER_CITY'],
+            Value = update.headers['last-modified'],
+            Type = 'String',
+            Overwrite = True
+        )
 
     url = 'https://download.maxmind.com/geoip/databases/GeoLite2-ASN/download?suffix=tar.gz'
-    response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
-    with open('/tmp/maxmind2.tar.gz', 'wb') as f:
-        f.write(response.content)
+    update = requests.head(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
+
+    with open('/tmp/asn.updated', 'w') as f:
+        f.write(update.headers['last-modified'])
     f.close()
 
-    with open('/tmp/GeoLite2-ASN.mmdb', 'wb') as w:
-        with tarfile.open('/tmp/maxmind2.tar.gz', 'r:gz') as tar:
-            for member in tar.getmembers():
-                if os.path.splitext(member.name)[1] == '.mmdb':
-                    r = tar.extractfile(member)
-                    if r is not None:
-                        content = r.read()
-                    r.close
-                    w.write(content)
-        tar.close()
-    w.close()
+    if asn['Parameter']['Value'] != update.headers['last-modified']:
 
-    response = s3_client.upload_file('/tmp/GeoLite2-ASN.mmdb',os.environ['S3_BUCKET'],'GeoLite2-ASN.mmdb')
+        print("Downloading GeoLite2-ASN.mmdb")
+
+        url = 'https://download.maxmind.com/geoip/databases/GeoLite2-ASN/download?suffix=tar.gz'
+        response = requests.get(url, auth=(account['Parameter']['Value'], secret['Parameter']['Value']))
+        with open('/tmp/maxmind2.tar.gz', 'wb') as f:
+            f.write(response.content)
+        f.close()
+
+        with open('/tmp/GeoLite2-ASN.mmdb', 'wb') as w:
+            with tarfile.open('/tmp/maxmind2.tar.gz', 'r:gz') as tar:
+                for member in tar.getmembers():
+                    if os.path.splitext(member.name)[1] == '.mmdb':
+                        r = tar.extractfile(member)
+                        if r is not None:
+                            content = r.read()
+                        r.close()
+                        w.write(content)
+            tar.close()
+        w.close()
+
+        response = s3_client.upload_file('/tmp/GeoLite2-ASN.mmdb',os.environ['S3_BUCKET'],'GeoLite2-ASN.mmdb')
+        response = s3_client.upload_file('/tmp/GeoLite2-ASN.mmdb',os.environ['S3_ARCHIVE'],year+'/'+month+'/'+day+'/'+hour+'/GeoLite2-ASN.mmdb')
+        response = s3_client.upload_file('/tmp/GeoLite2-ASN.mmdb',os.environ['S3_RESEARCH'],year+'/'+month+'/'+day+'/'+hour+'/GeoLite2-ASN.mmdb')
+
+        ssm.put_parameter(
+            Name = os.environ['SSM_PARAMETER_ASN'],
+            Value = update.headers['last-modified'],
+            Type = 'String',
+            Overwrite = True
+        )
+
+    with open('/tmp/GeoLite2-ASN.mmdb', 'wb') as f:
+        s3_client.download_fileobj(os.environ['S3_BUCKET'], 'GeoLite2-ASN.mmdb', f) 
+    f.close()
+
+    with open('/tmp/GeoLite2-City.mmdb', 'wb') as f:
+        s3_client.download_fileobj(os.environ['S3_BUCKET'], 'GeoLite2-City.mmdb', f) 
+    f.close()
 
     with open('/tmp/search.py', 'wb') as f:
         s3_client.download_fileobj(os.environ['S3_BUCKET'], 'search.py', f) 
@@ -84,6 +131,8 @@ def handler(event, context):
 
     with zipfile.ZipFile('/tmp/geoip2.zip', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zipf:
 
+        zipf.write('/tmp/asn.updated','asn.updated')
+        zipf.write('/tmp/city.updated','city.updated')
         zipf.write('/tmp/search.py','search.py')
         zipf.write('/tmp/GeoLite2-ASN.mmdb','GeoLite2-ASN.mmdb')
         zipf.write('/tmp/GeoLite2-City.mmdb','GeoLite2-City.mmdb')
@@ -109,61 +158,6 @@ def handler(event, context):
         S3Bucket = os.environ['S3_BUCKET'],
         S3Key = 'geoip2.zip'
     )
-
-    token = ssm.get_parameter(
-        Name = os.environ['SSM_PARAMETER_GIT'], 
-        WithDecryption = True
-    )
-
-    headers = {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': 'Bearer '+token['Parameter']['Value'],
-        'X-GitHub-Api-Version': '2022-11-28'
-    }
-
-    year = datetime.datetime.now().strftime('%Y')
-    month = datetime.datetime.now().strftime('%m')
-    day = datetime.datetime.now().strftime('%d')
-    epoch = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
-
-    data = '''{
-        "tag_name":"v'''+str(year)+'''.'''+str(month)+str(day)+'''.'''+str(epoch)+'''",
-        "target_commitish":"main",
-        "name":"GeoLite2",
-        "body":"This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.",
-        "draft":false,
-        "prerelease":false,
-        "generate_release_notes":false
-    }'''
-
-    response = requests.post(
-        'https://api.github.com/repos/jblukach/maxmind-geolite2/releases',
-        headers=headers,
-        data=data
-    )
-
-    print(response.json())
-
-    headers = {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': 'Bearer '+token['Parameter']['Value'],
-        'X-GitHub-Api-Version': '2022-11-28',
-        'Content-Type': 'application/octet-stream'
-    }
-
-    params = {
-        "name":"GeoLite2.zip"
-    }
-
-    url = 'https://uploads.github.com/repos/jblukach/maxmind-geolite2/releases/'+str(response.json()['id'])+'/assets'
-
-    with open('/tmp/geoip2.zip', 'rb') as f:
-        data = f.read()
-    f.close()
-
-    response = requests.post(url, params=params, headers=headers, data=data)
-
-    print(response.json())
 
     return {
         'statusCode': 200,
