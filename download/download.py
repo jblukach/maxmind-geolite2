@@ -66,8 +66,11 @@ def handler(event, context):
             tar.close()
         w.close()
 
+        response = s3_client.upload_file('/tmp/city.updated',os.environ['S3_BUCKET'],'city.updated')
         response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_BUCKET'],'GeoLite2-City.mmdb')
+        response = s3_client.upload_file('/tmp/city.updated',os.environ['S3_ARCHIVE'],year+'/'+month+'/'+day+'/'+hour+'/city.updated')
         response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_ARCHIVE'],year+'/'+month+'/'+day+'/'+hour+'/GeoLite2-City.mmdb')
+        response = s3_client.upload_file('/tmp/city.updated',os.environ['S3_RESEARCH'],year+'/'+month+'/'+day+'/'+hour+'/city.updated')
         response = s3_client.upload_file('/tmp/GeoLite2-City.mmdb',os.environ['S3_RESEARCH'],year+'/'+month+'/'+day+'/'+hour+'/GeoLite2-City.mmdb')
 
         ssm.put_parameter(
@@ -106,8 +109,11 @@ def handler(event, context):
             tar.close()
         w.close()
 
+        response = s3_client.upload_file('/tmp/asn.updated',os.environ['S3_BUCKET'],'asn.updated')
         response = s3_client.upload_file('/tmp/GeoLite2-ASN.mmdb',os.environ['S3_BUCKET'],'GeoLite2-ASN.mmdb')
+        response = s3_client.upload_file('/tmp/asn.updated',os.environ['S3_ARCHIVE'],year+'/'+month+'/'+day+'/'+hour+'/asn.updated')
         response = s3_client.upload_file('/tmp/GeoLite2-ASN.mmdb',os.environ['S3_ARCHIVE'],year+'/'+month+'/'+day+'/'+hour+'/GeoLite2-ASN.mmdb')
+        response = s3_client.upload_file('/tmp/asn.updated',os.environ['S3_RESEARCH'],year+'/'+month+'/'+day+'/'+hour+'/asn.updated')
         response = s3_client.upload_file('/tmp/GeoLite2-ASN.mmdb',os.environ['S3_RESEARCH'],year+'/'+month+'/'+day+'/'+hour+'/GeoLite2-ASN.mmdb')
 
         ssm.put_parameter(
@@ -115,19 +121,27 @@ def handler(event, context):
             Value = update.headers['last-modified'],
             Type = 'String',
             Overwrite = True
-        )
+    )
+
+    print("Copying GeoLite2-ASN.mmdb")
 
     with open('/tmp/GeoLite2-ASN.mmdb', 'wb') as f:
         s3_client.download_fileobj(os.environ['S3_BUCKET'], 'GeoLite2-ASN.mmdb', f) 
     f.close()
 
+    print("Copying GeoLite2-City.mmdb")
+
     with open('/tmp/GeoLite2-City.mmdb', 'wb') as f:
         s3_client.download_fileobj(os.environ['S3_BUCKET'], 'GeoLite2-City.mmdb', f) 
     f.close()
 
+    print("Copying search.py")
+
     with open('/tmp/search.py', 'wb') as f:
         s3_client.download_fileobj(os.environ['S3_BUCKET'], 'search.py', f) 
     f.close()
+
+    print("Packaging geoip2.zip")
 
     with zipfile.ZipFile('/tmp/geoip2.zip', 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zipf:
 
@@ -152,6 +166,8 @@ def handler(event, context):
     response = s3_client.upload_file('/tmp/geoip2.zip',os.environ['S3_BUCKET'],'geoip2.zip')
 
     client = boto3.client('lambda')
+
+    print("Updating "+os.environ['LAMBDA_FUNCTION'])
 
     response = client.update_function_code(
         FunctionName = os.environ['LAMBDA_FUNCTION'],
