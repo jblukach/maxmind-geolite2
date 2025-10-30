@@ -76,8 +76,8 @@ class MaxmindGeolite2Stack(Stack):
         )
 
         archive.add_lifecycle_rule(
-            expiration = Duration.days(30),
-            noncurrent_version_expiration = Duration.days(30)
+            expiration = Duration.days(14),
+            noncurrent_version_expiration = Duration.days(14)
         )
 
         bucket = _s3.Bucket(
@@ -330,7 +330,9 @@ class MaxmindGeolite2Stack(Stack):
         domain = _api.DomainName(
             self, 'domain',
             domain_name = 'geo.4n6ir.com',
-            certificate = acm
+            certificate = acm,
+            endpoint_type = _api.EndpointType.REGIONAL,
+            ip_address_type = _api.IpAddressType.DUAL_STACK
         )
 
     ### API LOG ROLE ###

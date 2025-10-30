@@ -1,20 +1,15 @@
 from aws_cdk import (
     Duration,
     RemovalPolicy,
-    Size,
     Stack,
     aws_apigatewayv2 as _api,
     aws_apigatewayv2_integrations as _integrations,
     aws_certificatemanager as _acm,
-    aws_events as _events,
-    aws_events_targets as _targets,
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_logs as _logs,
     aws_route53 as _route53,
     aws_route53_targets as _r53targets,
-    aws_s3 as _s3,
-    aws_s3_deployment as _deployment,
     aws_ssm as _ssm
 )
 
@@ -133,7 +128,9 @@ class MaxmindGeolite2History(Stack):
         domain = _api.DomainName(
             self, 'domain',
             domain_name = 'history.4n6ir.com',
-            certificate = acm
+            certificate = acm,
+            endpoint_type = _api.EndpointType.REGIONAL,
+            ip_address_type = _api.IpAddressType.DUAL_STACK
         )
 
     ### API LOG ROLE ###
